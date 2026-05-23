@@ -385,13 +385,28 @@ const agentActions: AgentAction[] = [
   },
 ];
 
-const team: User[] = [
-  { id: "user-arjun", tenantSlug: tenant.slug, email: "arjun@bombaygrooming.com", name: "Arjun Mehta", password: "ProoflytDemo!2026", roles: ["TENANT_ADMIN", "COMPLIANCE_MANAGER"], title: "DPO Lead" },
-  { id: "user-meera", tenantSlug: tenant.slug, email: "meera@bombaygrooming.com", name: "Meera Kapoor", password: "ProoflytDemo!2026", roles: ["CASE_HANDLER", "REVIEWER"], title: "Privacy Operations Manager" },
-  { id: "user-rohan", tenantSlug: tenant.slug, email: "rohan@bombaygrooming.com", name: "Rohan Iyer", password: "ProoflytDemo!2026", roles: ["SECURITY_OWNER"], title: "Security & IT Owner" },
-  { id: "user-auditor", tenantSlug: tenant.slug, email: "audit@bombaygrooming.com", name: "Nisha Bhatt", password: "ProoflytDemo!2026", roles: ["AUDITOR"], title: "External Auditor" },
-  { id: "ops-user", tenantSlug: null, email: "ops@prooflyt.com", name: "Platform Ops", password: "ProoflytOps!2026", roles: ["TENANT_ADMIN"], title: "Internal Ops Lead", internalAdmin: true },
-];
+/**
+ *  Demo passwords are NOT hardcoded. They are supplied at runtime via
+ *  the `SeedOptions` parameter to `createSeedState()` — which the worker
+ *  populates from the `DEMO_PASSWORD` and `OPS_PASSWORD` env bindings
+ *  (Cloudflare Workers secret, Vercel env, or local `.env`).
+ *
+ *  If the env values aren't set, the placeholders below fail-loud so the
+ *  operator notices during local dev — these are intentionally invalid
+ *  for production use.
+ */
+const PLACEHOLDER_DEMO_PASSWORD = "set-DEMO_PASSWORD-env-var";
+const PLACEHOLDER_OPS_PASSWORD = "set-OPS_PASSWORD-env-var";
+
+function buildTeam(demoPassword: string, opsPassword: string): User[] {
+  return [
+    { id: "user-arjun", tenantSlug: tenant.slug, email: "arjun@bombaygrooming.com", name: "Arjun Mehta", password: demoPassword, roles: ["TENANT_ADMIN", "COMPLIANCE_MANAGER"], title: "DPO Lead" },
+    { id: "user-meera", tenantSlug: tenant.slug, email: "meera@bombaygrooming.com", name: "Meera Kapoor", password: demoPassword, roles: ["CASE_HANDLER", "REVIEWER"], title: "Privacy Operations Manager" },
+    { id: "user-rohan", tenantSlug: tenant.slug, email: "rohan@bombaygrooming.com", name: "Rohan Iyer", password: demoPassword, roles: ["SECURITY_OWNER"], title: "Security & IT Owner" },
+    { id: "user-auditor", tenantSlug: tenant.slug, email: "audit@bombaygrooming.com", name: "Nisha Bhatt", password: demoPassword, roles: ["AUDITOR"], title: "External Auditor" },
+    { id: "ops-user", tenantSlug: null, email: "ops@prooflyt.com", name: "Platform Ops", password: opsPassword, roles: ["TENANT_ADMIN"], title: "Internal Ops Lead", internalAdmin: true },
+  ];
+}
 
 const invites: Invite[] = [
   { token: "invite-bgl-reviewer", email: "reviewer@bombaygrooming.com", tenantSlug: tenant.slug, roles: ["REVIEWER"], title: "Review Desk" },
@@ -448,7 +463,18 @@ export function createTenantWorkspace(tenantObj: Tenant): TenantWorkspace {
   };
 }
 
-export function createSeedWorkspace(): TenantWorkspace {
+export interface SeedOptions {
+  /** Password for the four Bombay Grooming Labs demo users. */
+  demoPassword?: string;
+  /** Password for the internal cross-tenant ops admin. */
+  opsPassword?: string;
+}
+
+export function createSeedWorkspace(opts: SeedOptions = {}): TenantWorkspace {
+  const team = buildTeam(
+    opts.demoPassword ?? PLACEHOLDER_DEMO_PASSWORD,
+    opts.opsPassword ?? PLACEHOLDER_OPS_PASSWORD,
+  );
   const workspace = createTenantWorkspace(tenant);
   workspace.team = team.filter((user) => user.tenantSlug === tenant.slug);
   workspace.obligations = obligations;
@@ -478,7 +504,11 @@ export function createSeedWorkspace(): TenantWorkspace {
   return workspace;
 }
 
-export function createSeedState(): AppState {
+export function createSeedState(opts: SeedOptions = {}): AppState {
+  const team = buildTeam(
+    opts.demoPassword ?? PLACEHOLDER_DEMO_PASSWORD,
+    opts.opsPassword ?? PLACEHOLDER_OPS_PASSWORD,
+  );
   return {
     tenants: [tenant],
     users: team,
@@ -486,7 +516,7 @@ export function createSeedState(): AppState {
     resets,
     sessions,
     workspaces: {
-      [tenant.slug]: createSeedWorkspace(),
+      [tenant.slug]: createSeedWorkspace(opts),
     } as Record<string, TenantWorkspace>,
   };
 }
