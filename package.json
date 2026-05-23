@@ -1,0 +1,15 @@
+{
+  "name": "prooflyt-jva-spec",
+  "private": true,
+  "version": "0.1.0",
+  "description": "JVA Schedule 1 + Schedule 2 + Annexure A specification artifacts for Prooflyt DPDP Compliance Desk. Companion to prooflyt-msp.",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "typecheck": "npm run typecheck -w @prooflyt/contracts && npm run typecheck -w @prooflyt/domain && npm run typecheck -w @prooflyt/mapping"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.3"
+  }
+}

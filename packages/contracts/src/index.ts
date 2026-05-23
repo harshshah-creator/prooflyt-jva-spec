@@ -1,0 +1,540 @@
+export type Role =
+  | "TENANT_ADMIN"
+  | "COMPLIANCE_MANAGER"
+  | "DEPARTMENT_OWNER"
+  | "REVIEWER"
+  | "CASE_HANDLER"
+  | "SECURITY_OWNER"
+  | "AUDITOR"
+  | "PLATFORM_ADMIN";
+
+export type SmartMappingMode = "HEADER_ONLY" | "MASKED_SAMPLE" | "EPHEMERAL_FULL";
+
+export type ModuleId =
+  | "dashboard"
+  | "setup"
+  | "sources"
+  | "register"
+  | "notices"
+  | "rights"
+  | "retention"
+  | "incidents"
+  | "processors"
+  | "evidence"
+  | "reports"
+  | "dpdp-reference"
+  | "connectors";
+
+export interface PublicBrand {
+  logoText: string;
+  primaryColor: string;
+  accentColor: string;
+  publicDomain: string;
+}
+
+export interface Tenant {
+  id: string;
+  slug: string;
+  name: string;
+  industry: string;
+  descriptor: string;
+  operationalStory: string;
+  active: boolean;
+  publicBrand: PublicBrand;
+}
+
+export interface User {
+  id: string;
+  tenantSlug: string | null;
+  email: string;
+  name: string;
+  password: string;
+  roles: Role[];
+  title: string;
+  internalAdmin?: boolean;
+}
+
+export interface Department {
+  id: string;
+  name: string;
+  ownerTitle: string;
+  obligationFocus: string;
+}
+
+export interface SourceSystem {
+  id: string;
+  name: string;
+  systemType: string;
+  owner: string;
+  status: "LIVE" | "REVIEW" | "PLANNED";
+}
+
+export interface Invite {
+  token: string;
+  email: string;
+  tenantSlug: string;
+  roles: Role[];
+  title: string;
+}
+
+export interface PasswordReset {
+  token: string;
+  email: string;
+}
+
+export interface SessionRecord {
+  token: string;
+  userId: string;
+  tenantSlug: string | null;
+  createdAt: string;
+  /** ISO timestamp at which the session ceases to authenticate. */
+  expiresAt?: string;
+  /** ISO timestamp of last successful auth check, for sliding renewal. */
+  lastSeenAt?: string;
+}
+
+export interface ObligationBucket {
+  id: string;
+  title: string;
+  operationalLabel: string;
+  module: ModuleId;
+  readiness: number;
+  maturity: number;
+  ownerPresent: boolean;
+  evidencePresent: boolean;
+  status: "STRONG" | "UPDATING" | "NEEDS_ACTION" | "REVIEWING";
+}
+
+export interface DataSource {
+  id: string;
+  name: string;
+  fileName: string;
+  profileMode: SmartMappingMode;
+  status: "INGESTED" | "IN_REVIEW" | "APPROVED";
+  fields: number;
+  approvedFields: number;
+  warnings: string[];
+  uploadedAt?: string;
+  sheetName?: string;
+  pushedToRegister?: boolean;
+  linkedRegisterEntryIds?: string[];
+}
+
+export interface SourceFieldProfile {
+  id: string;
+  sourceId: string;
+  fieldName: string;
+  mappedCategory: string;
+  identifierType: string;
+  confidence: number;
+  purpose: string;
+  legalBasis: string;
+  retentionLabel: string;
+  requiresReview: boolean;
+  warnings: string[];
+}
+
+export interface RegisterEntry {
+  id: string;
+  system: string;
+  dataCategory: string;
+  purpose: string;
+  legalBasis: string;
+  retentionLabel: string;
+  linkedNoticeId: string | null;
+  linkedProcessorIds: string[];
+  lifecycle: "DRAFT" | "IN_REVIEW" | "APPROVED" | "ARCHIVED";
+  sourceTrace: string;
+  completeness: "COMPLETE" | "PARTIAL" | "MISSING";
+}
+
+export interface Notice {
+  id: string;
+  title: string;
+  audience: string;
+  language: string;
+  version: string;
+  status: "DRAFT" | "IN_REVIEW" | "APPROVED" | "PUBLISHED" | "RETIRED";
+  content: string;
+  acknowledgements: number;
+  publishedAt?: string;
+}
+
+export interface RightsCase {
+  id: string;
+  // DPDP rights enumerated in JVA Schedule 1 §S1.4 / Annexure A §A7.5:
+  // Access (§13), Correction (§14), Deletion/Erasure (§14), Portability,
+  // Grievance Redressal (§15), Consent Withdrawal (§6).
+  type: "ACCESS" | "CORRECTION" | "DELETION" | "PORTABILITY" | "GRIEVANCE" | "WITHDRAWAL";
+  requestor: string;
+  status: "NEW" | "IN_PROGRESS" | "AWAITING_PROOF" | "CLOSED";
+  sla: string;
+  evidenceLinked: boolean;
+  linkedDeletionTaskId?: string | null;
+}
+
+export interface DeletionTask {
+  id: string;
+  label: string;
+  system: string;
+  dueDate: string;
+  status: "OPEN" | "LEGAL_HOLD" | "AWAITING_PROCESSOR" | "READY_FOR_PROOF" | "CLOSED";
+  proofLinked: boolean;
+  processorAcknowledged: boolean;
+}
+
+export interface Incident {
+  id: string;
+  title: string;
+  status: "TRIAGE" | "ASSESSMENT" | "CONTAINMENT" | "CLOSED";
+  severity: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+  boardDeadline: string;
+  remediationOwner: string;
+  evidenceLinked: boolean;
+  // JVA Schedule 1 §S1.9 / Annexure A §A9.6:
+  //   "Breach with affected_count > 1,000 data subjects automatically
+  //    marked High or Critical severity."
+  affectedCount?: number;
+  discoveryDate?: string; // ISO timestamp — 72-hour timer anchor (§S1.9)
+  autoEscalated?: boolean; // true once auto-escalation to Admin has fired
+}
+
+export interface Processor {
+  id: string;
+  name: string;
+  service: string;
+  dpaStatus: "SIGNED" | "IN_REVIEW" | "MISSING";
+  purgeAckStatus: "ACKNOWLEDGED" | "PENDING" | "REFUSED";
+  subProcessorCount: number;
+}
+
+export interface AuditEvent {
+  id: string;
+  createdAt: string;
+  actor: string;
+  module: ModuleId;
+  action: string;
+  targetId: string;
+  summary: string;
+}
+
+export interface EvidenceArtifact {
+  id: string;
+  label: string;
+  classification: "SYSTEM_DERIVED" | "UPLOADED" | "ATTESTATION";
+  linkedRecord: string;
+  createdAt: string;
+  contentIndexed: false;
+  fileName?: string;
+  contentType?: string;
+  sizeBytes?: number;
+  storageKey?: string;
+}
+
+export interface MetricSummary {
+  readinessScore: number;
+  ownerCoverage: number;
+  evidenceCoverage: number;
+  openGaps: number;
+  openRights: number;
+  overdueDeletions: number;
+  activeIncidents: number;
+}
+
+export interface TenantWorkspace {
+  tenant: Tenant;
+  team: User[];
+  departments: Department[];
+  sourceSystems: SourceSystem[];
+  obligations: ObligationBucket[];
+  sources: DataSource[];
+  sourceProfiles: SourceFieldProfile[];
+  registerEntries: RegisterEntry[];
+  notices: Notice[];
+  rightsCases: RightsCase[];
+  deletionTasks: DeletionTask[];
+  incidents: Incident[];
+  processors: Processor[];
+  evidence: EvidenceArtifact[];
+  auditTrail: AuditEvent[];
+  agentActions: AgentAction[];
+  connections: ConnectorConnection[];
+  connectorEvents: ConnectorEvent[];
+  metrics: MetricSummary;
+}
+
+export interface SourceProfileRequest {
+  fileName: string;
+  mode: SmartMappingMode;
+  headers: string[];
+}
+
+export interface WorkspaceResponse {
+  workspace: TenantWorkspace;
+  operator: {
+    name: string;
+    email: string;
+    title: string;
+    roles: string[];
+  };
+  moduleAccess: Record<string, boolean>;
+}
+
+export interface PublicRightsResponse {
+  tenant: TenantWorkspace["tenant"];
+  notice: TenantWorkspace["notices"][number] | null;
+  queueSummary: {
+    openRights: number;
+    overdueDeletions: number;
+  };
+}
+
+export interface PublicNoticeResponse {
+  tenant: TenantWorkspace["tenant"];
+  notice: TenantWorkspace["notices"][number] | null;
+}
+
+/* ── Agentic AI ─────────────────────────────────────────────── */
+
+export type AgentActionCategory = "DRAFT" | "RECOMMEND" | "EXECUTE";
+export type AgentActionState = "DRAFT" | "REVIEWED" | "APPROVED" | "REJECTED";
+
+export interface AgentAction {
+  id: string;
+  agentId: "breach-response" | "rights-orchestrator";
+  triggerId: string;           // INC-xxx or RR-xxx
+  category: AgentActionCategory;
+  state: AgentActionState;
+  label: string;               // Short human label
+  contentType: "severity-assessment" | "board-notification" | "processor-notification"
+    | "investigation-checklist" | "principal-communication" | "countdown-timer"
+    | "data-map" | "sla-calculation" | "acknowledgment-draft" | "purge-request"
+    | "escalation-notice" | "response-assembly";
+  body: string;                // The drafted text / structured content
+  createdAt: string;
+  reviewedAt?: string;
+  reviewedBy?: string;
+  editedBody?: string;         // If reviewer modified before approving
+  approvalNote?: string;
+}
+
+export interface AdminBootstrapResponse {
+  operator: { name: string; email: string; title: string };
+  tenants: Array<{
+    slug: string;
+    name: string;
+    industry: string;
+    active: boolean;
+    teamCount: number;
+    metrics: {
+      readinessScore: number;
+      ownerCoverage: number;
+      evidenceCoverage: number;
+      openGaps: number;
+    };
+  }>;
+  masterLibrary: string[];
+}
+
+/* ── Connectors framework ─────────────────────────────────────
+ *  Phase 1: HUBSPOT, RAZORPAY, FRESHDESK
+ *  Phase 2: ZOHO_CRM, SHOPIFY, POSTGRES, MONGODB, AWS_S3
+ *  Each Connector is also auto-treated as a Processor (Section 8 governance).
+ */
+
+export type ConnectorType =
+  // Phase 1+2 (8)
+  | "HUBSPOT" | "RAZORPAY" | "FRESHDESK" | "ZOHO_CRM" | "SHOPIFY"
+  | "POSTGRES" | "MONGODB" | "AWS_S3"
+  // Phase 3A — 10 Indian-priority
+  | "GOOGLE_WORKSPACE" | "MOENGAGE" | "WEBENGAGE" | "CLEVERTAP"
+  | "GUPSHUP" | "EXOTEL" | "WHATSAPP_BUSINESS" | "CASHFREE"
+  | "PAYU" | "SHIPROCKET"
+  // Phase 3B — 10 global
+  | "MICROSOFT_365" | "MAILCHIMP" | "SENDGRID" | "TWILIO" | "STRIPE"
+  | "SALESFORCE" | "SLACK" | "GOOGLE_DRIVE" | "NOTION" | "ZENDESK"
+  // Phase 3C — 15 mid-priority
+  | "KLAVIYO" | "AUTH0" | "OKTA" | "FIREBASE_AUTH"
+  | "GOOGLE_ANALYTICS_4" | "MIXPANEL" | "AMPLITUDE" | "SEGMENT" | "POSTHOG"
+  | "PIPEDRIVE" | "LEADSQUARED" | "WOOCOMMERCE" | "MAGENTO" | "INTERCOM"
+  | "JIRA"
+  // Phase 3D — 15 final
+  | "PAYTM_BUSINESS" | "PHONEPE_BUSINESS" | "DELHIVERY" | "BLUEDART"
+  | "KEKA" | "DARWINBOX" | "BAMBOOHR" | "DROPBOX" | "ONEDRIVE"
+  | "MYSQL" | "SNOWFLAKE" | "BIGQUERY"
+  | "AMAZON_SELLER" | "FLIPKART_SELLER" | "UNICOMMERCE";
+
+export type ConnectorAuthType =
+  | "OAUTH2" | "API_KEY" | "CONNECTION_STRING" | "AWS_IAM";
+
+export type ConnectorCategory =
+  | "CRM" | "PAYMENTS" | "HELPDESK" | "ECOMMERCE" | "DATABASE" | "OBJECT_STORAGE"
+  | "IDENTITY" | "MARKETING" | "COMMS" | "ANALYTICS"
+  | "MARKETPLACE" | "LOGISTICS" | "HR" | "COLLABORATION"
+  | "DATA_WAREHOUSE" | "STORAGE_DOC";
+
+export interface ConnectorDefinition {
+  id: ConnectorType;
+  name: string;
+  vendor: string;
+  category: ConnectorCategory;
+  authType: ConnectorAuthType;
+  apiBaseUrl: string;
+  // OAuth2-only
+  oauthAuthorizeUrl?: string;
+  oauthTokenUrl?: string;
+  oauthScopes?: string[];
+  // Capability flags
+  capabilities: {
+    discovery: boolean;
+    dsrAccess: boolean;
+    dsrErasure: boolean;
+    dsrCorrection: boolean;
+    grievanceIngest: boolean;
+    webhooks: boolean;
+    purgeProof: boolean;
+  };
+  // DPDP context
+  dpdpNotes: {
+    legalBasisFloor?: string;       // e.g. "RBI 5-year retention overrides DPDP erasure"
+    dataResidency?: string;         // e.g. "India (RBI mandated)"
+    indianFootprint?: string;       // marketing context
+  };
+  brand: {
+    logoText: string;
+    accentColor: string;
+  };
+  // Per-connector demo + audit metadata. Replaces the per-type switch
+  // statements that previously lived in apps/api-worker/src/connectors.ts.
+  // Adding a connector now means appending one definition — nothing else.
+  serviceLabel: string;             // Vendor (Processor) entry "service" field
+  recordLabel: string;              // "customers" | "contacts" | "tickets" | …
+  simulatedRecordCount: number;     // discovery preview size (records scanned)
+  discoveryWarnings: string[];      // surfaced on Catalogue + post-discovery
+  purposeTemplate: string;          // includes "{category}" placeholder
+  simulatedDsr: {
+    exportCount: number;
+    eraseCount: number;             // 0 means "denied" (e.g. Razorpay §17(2)(a))
+  };
+}
+
+export type ConnectorConnectionStatus =
+  | "PENDING_AUTH"
+  | "CONNECTED"
+  | "REFRESHING"
+  | "REVOKED"
+  | "ERROR";
+
+export interface ConnectorConnection {
+  id: string;                          // conn-hubspot-{ts}
+  connectorType: ConnectorType;
+  tenantSlug: string;
+  displayName: string;                 // "HubSpot — Acme Production"
+  // Secrets (never returned to UI; redacted by sanitizer)
+  encryptedAccessToken?: string;
+  encryptedRefreshToken?: string;
+  encryptedApiKey?: string;
+  encryptedWebhookSecret?: string;
+  workspaceDomain?: string;            // freshdesk subdomain / shopify shop / zoho dc
+  accountIdentifier?: string;          // razorpay key_id (last 4) / aws access key (last 4)
+  region?: string;                     // aws region / mongo cluster region
+  bucketName?: string;                 // s3 bucket name
+  schemaScope?: string;                // postgres schema / mongo db name
+  accessTokenExpiresAt?: string;
+  // Linked records
+  linkedProcessorId?: string;
+  linkedSourceIds: string[];
+  linkedRegisterEntryIds: string[];
+  // State
+  status: ConnectorConnectionStatus;
+  lastError?: string;
+  lastDiscoveryAt?: string;
+  lastDsrAt?: string;
+  recordsDiscovered?: number;
+  scopesGranted?: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ConnectorConnectionPublic {
+  id: string;
+  connectorType: ConnectorType;
+  displayName: string;
+  status: ConnectorConnectionStatus;
+  workspaceDomain?: string;
+  accountIdentifier?: string;
+  region?: string;
+  bucketName?: string;
+  schemaScope?: string;
+  linkedProcessorId?: string;
+  linkedSourceIds: string[];
+  linkedRegisterEntryIds: string[];
+  lastError?: string;
+  lastDiscoveryAt?: string;
+  lastDsrAt?: string;
+  recordsDiscovered?: number;
+  scopesGranted?: string[];
+  accessTokenExpiresAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type ConnectorEventType =
+  | "DISCOVERY_COMPLETED"
+  | "GRIEVANCE_INGESTED"
+  | "DSR_EXPORT_COMPLETED"
+  | "DSR_ERASURE_COMPLETED"
+  | "DSR_ERASURE_DENIED"     // legal-basis denial (e.g. RBI retention)
+  | "WEBHOOK_RECEIVED"
+  | "TOKEN_REFRESHED"
+  | "CONNECTION_REVOKED";
+
+export interface ConnectorEvent {
+  id: string;
+  connectionId: string;
+  connectorType: ConnectorType;
+  eventType: ConnectorEventType;
+  externalId?: string;                 // ticket_id / contact_id / payment_id
+  linkedRightsId?: string;
+  linkedDeletionId?: string;
+  linkedEvidenceId?: string;
+  summary: string;
+  payload?: Record<string, unknown>;
+  createdAt: string;
+}
+
+export interface ConnectorDiscoveredField {
+  systemName: string;
+  fieldName: string;
+  category: string;                    // Identity | Contact | Financial | ...
+  identifierType: string;              // Direct identifier | Operational attribute
+  confidence: number;
+  legalBasisHint: string;
+  retentionHint: string;
+}
+
+export interface ConnectorDiscoveryResult {
+  connectionId: string;
+  connectorType: ConnectorType;
+  recordsScanned: number;
+  fieldsDiscovered: ConnectorDiscoveredField[];
+  autoCreatedSourceIds: string[];
+  autoCreatedRegisterIds: string[];
+  autoCreatedProcessorId?: string;
+  summary: string;
+  warnings: string[];
+}
+
+export interface ConnectorDsrResult {
+  connectionId: string;
+  connectorType: ConnectorType;
+  action: "EXPORT" | "ERASE";
+  subjectIdentifier: string;           // email / phone / customer_id
+  subjectKey: string;                  // "email" | "phone" | "id"
+  succeeded: boolean;
+  recordsAffected: number;
+  evidenceId?: string;
+  denialReason?: string;               // e.g. "RBI Section 17(2)(a) retention"
+  payloadSample?: Record<string, unknown>;
+  occurredAt: string;
+}
