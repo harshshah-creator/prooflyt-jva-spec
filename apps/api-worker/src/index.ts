@@ -579,6 +579,7 @@ function handleAdminCreateTenant(
   state: AppState,
   body: { name: string; slug: string; industry: string; descriptor?: string },
   authHeader?: string,
+  defaultAdminPassword?: string,
 ) {
   const { user } = requireSession(state, authHeader);
   if (!user.internalAdmin) throw new HttpError(403, "Internal admin access required.");
@@ -608,12 +609,17 @@ function handleAdminCreateTenant(
   const workspace = createTenantWorkspace(newTenant);
   state.workspaces[slug] = workspace;
 
+  // Initial admin password: prefer the operator-supplied default
+  // (sourced from `DEMO_PASSWORD` env binding by the route handler), or
+  // generate a one-time random password the operator must rotate.
+  const initialPassword = defaultAdminPassword
+    ?? `tmp-${crypto.randomUUID().replace(/-/g, "").slice(0, 18)}`;
   const adminUser: User = {
     id: `user-admin-${slug}-${Date.now()}`,
     tenantSlug: slug,
     email: `admin@${slug}.com`,
     name: `${body.name.trim()} Admin`,
-    password: "ProoflytDemo!2026",
+    password: initialPassword,
     roles: ["TENANT_ADMIN", "COMPLIANCE_MANAGER"] as Role[],
     title: "Tenant Admin",
   };
@@ -621,7 +627,10 @@ function handleAdminCreateTenant(
   workspace.team.push(adminUser);
 
   syncMetrics(workspace);
-  return { ok: true, tenant: newTenant, adminEmail: adminUser.email };
+  // Return the initial password ONCE so the operator can hand it to the
+  // tenant admin out-of-band. It is never logged or stored elsewhere
+  // beyond the auth record itself.
+  return { ok: true, tenant: newTenant, adminEmail: adminUser.email, initialPassword };
 }
 
 function handleAdminDpdpLibrary(state: AppState, authHeader?: string) {
@@ -2259,7 +2268,7 @@ export default {
       }
       if (request.method === "POST" && pathname === "/api/admin/tenants") {
         const body = await parseBody<{ name: string; slug: string; industry: string; descriptor?: string }>(request);
-        return json(await withState(env, (s) => handleAdminCreateTenant(s, body, auth)), 201);
+        return json(await withState(env, (s) => handleAdminCreateTenant(s, body, auth, env.DEMO_PASSWORD)), 201);
       }
       if (request.method === "GET" && pathname === "/api/admin/dpdp-library") {
         return json(await withState(env, (s) => handleAdminDpdpLibrary(s, auth)));
