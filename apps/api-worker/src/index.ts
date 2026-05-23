@@ -154,6 +154,10 @@ type Env = {
   SAHAMATI_AA_BASE_URL?: string;
   SAHAMATI_FIU_ID?: string;
   SAHAMATI_AA_PUBLIC_KEY_SPKI_B64?: string;
+  // Demo + ops passwords — sourced from Worker secrets, never code.
+  // Set with: wrangler secret put DEMO_PASSWORD (and OPS_PASSWORD).
+  DEMO_PASSWORD?: string;
+  OPS_PASSWORD?: string;
 };
 
 /* ------------------------------------------------------------------ */
@@ -2038,11 +2042,23 @@ function handleAcknowledgeNotice(state: AppState, tenantSlug: string) {
 /*  Durable Object                                                     */
 /* ------------------------------------------------------------------ */
 
-export class ProoflytRuntime extends DurableObject {
+export class ProoflytRuntime extends DurableObject<Env> {
+  /**
+   *  Build the seed-password options object from the Worker's env
+   *  bindings. Centralised so `getState()` and any future seed-rebuild
+   *  pathway stay in sync.
+   */
+  private seedOptions() {
+    return {
+      demoPassword: this.env.DEMO_PASSWORD,
+      opsPassword: this.env.OPS_PASSWORD,
+    };
+  }
+
   async getState() {
     let state = await this.ctx.storage.get<AppState>("state");
     if (!state) {
-      state = createSeedState();
+      state = createSeedState(this.seedOptions());
       await this.ctx.storage.put("state", state);
     }
     return state;
@@ -2050,6 +2066,17 @@ export class ProoflytRuntime extends DurableObject {
 
   async putState(state: AppState) {
     await this.ctx.storage.put("state", state);
+  }
+
+  /**
+   *  Rebuild the seed state with the current env-driven passwords.
+   *  Used by `POST /api/admin/reset` so password rotations take effect
+   *  without a redeploy.
+   */
+  async resetState() {
+    const fresh = createSeedState(this.seedOptions());
+    await this.ctx.storage.put("state", fresh);
+    return fresh;
   }
 }
 
@@ -2188,8 +2215,9 @@ export default {
       if (request.method === "POST" && pathname === "/api/admin/reset") {
         const id = env.PROOFLYT_RUNTIME.idFromName("default");
         const stub = env.PROOFLYT_RUNTIME.get(id);
-        const fresh = createSeedState();
-        await stub.putState(fresh);
+        // Rebuild seed inside the DO so it picks up the current env
+        // bindings for DEMO_PASSWORD / OPS_PASSWORD.
+        await stub.resetState();
         return json({ ok: true, message: "State reset to fresh seed." });
       }
 

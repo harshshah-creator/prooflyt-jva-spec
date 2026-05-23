@@ -4,5 +4,13 @@ dist/
 .DS_Store
 .env
 .env.local
+.env.*.local
 .vercel
 tsconfig.tsbuildinfo
+
+# NEVER commit credentials. The local operator's copy of demo + ops
+# passwords lives in credentials.md (or credentials-*.md). Excluded
+# defensively so that an accidental `git add .` cannot pick it up.
+credentials.md
+credentials-*.md
+*.credentials.md
