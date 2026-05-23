@@ -1,0 +1,30 @@
+# Jekyll config for GitHub Pages — JVA spec docs site.
+#
+# We use the minimal theme for clean, readable markdown rendering.
+# Source files: root *.md (rendered as pages) + docs/*.md (also rendered).
+# The api.html landing for Swagger UI is served as-is.
+
+title: "Prooflyt — JVA Schedules v4 Spec"
+description: "Specification artifacts for the Phase-1 DPDP Compliance Desk per the Joint Venture Agreement Schedules."
+theme: jekyll-theme-minimal
+show_downloads: false
+
+# Exclude non-docs files from the rendered site to keep it lean.
+exclude:
+  - node_modules/
+  - packages/
+  - tsconfig.base.json
+  - package.json
+  - package-lock.json
+  - .gitignore
+  - vercel.json
+
+# Markdown setup — GitHub-style.
+markdown: kramdown
+kramdown:
+  input: GFM
+  hard_wrap: false
+  syntax_highlighter: rouge
+
+# Make .md → .html resolve cleanly.
+permalink: pretty

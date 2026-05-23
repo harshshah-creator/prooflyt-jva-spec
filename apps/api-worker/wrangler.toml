@@ -1,0 +1,26 @@
+name = "prooflyt-jva-spec-api"
+main = "src/index.ts"
+compatibility_date = "2026-04-12"
+
+[[durable_objects.bindings]]
+name = "PROOFLYT_RUNTIME"
+class_name = "ProoflytRuntime"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["ProoflytRuntime"]
+
+# D1 binding intentionally omitted for the jva-spec deployment.
+# The worker's persistence is via Durable Object storage; D1 is optional
+# (PROOFLYT_DB?: D1Database). To attach a D1 later, run:
+#   wrangler d1 create prooflyt-jva-spec
+# then add the binding here with the returned database_id.
+
+[vars]
+GROQ_MODEL = "llama-3.3-70b-versatile"
+
+# Retention enforcement cron — daily at 02:00 UTC (07:30 IST).
+# Walks every tenant workspace, fires DSR ERASE per due retention task,
+# honours statutory floors (RBI / DPDP §17(2)(a)), seals proof.
+[triggers]
+crons = ["0 2 * * *"]

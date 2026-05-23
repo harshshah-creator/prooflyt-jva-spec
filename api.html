@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Prooflyt JVA Spec — API (§A12)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5.11.0/swagger-ui.css">
+  <style>
+    body { margin: 0; font-family: ui-sans-serif, system-ui, sans-serif; }
+    .topbar {
+      background: #0b1730; color: #fff; padding: 0.85rem 1.5rem;
+      display: flex; justify-content: space-between; align-items: center;
+      border-bottom: 3px solid #4f7cff;
+    }
+    .topbar h1 { font-size: 1rem; font-weight: 600; margin: 0; }
+    .topbar a { color: #9fb6ff; text-decoration: none; font-size: 0.85rem; }
+    .topbar a:hover { text-decoration: underline; }
+    #swagger-ui { max-width: 1280px; margin: 0 auto; }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <h1>Prooflyt JVA Spec — 12 API endpoint groups (§A12)</h1>
+    <div>
+      <a href="./">← Back to spec home</a>
+      &nbsp;&nbsp;
+      <a href="https://github.com/harshshah-creator/prooflyt-jva-spec">View on GitHub</a>
+    </div>
+  </header>
+  <div id="swagger-ui"></div>
+  <script src="https://unpkg.com/swagger-ui-dist@5.11.0/swagger-ui-bundle.js"></script>
+  <script src="https://unpkg.com/swagger-ui-dist@5.11.0/swagger-ui-standalone-preset.js"></script>
+  <script>
+    window.onload = () => {
+      window.ui = SwaggerUIBundle({
+        url: "./docs/openapi.yaml",
+        dom_id: "#swagger-ui",
+        deepLinking: true,
+        presets: [SwaggerUIBundle.presets.apis, SwaggerUIStandalonePreset],
+        plugins: [SwaggerUIBundle.plugins.DownloadUrl],
+        layout: "StandaloneLayout",
+        docExpansion: "list",
+        defaultModelsExpandDepth: 1,
+        tryItOutEnabled: false,
+      });
+    };
+  </script>
+</body>
+</html>

@@ -1,5 +1,8 @@
 # Prooflyt — JVA Spec Repo
 
+> 🌐 **Live site:** <https://harshshah-creator.github.io/prooflyt-jva-spec/>
+> 📖 **Interactive API spec:** <https://harshshah-creator.github.io/prooflyt-jva-spec/api.html>
+
 This repository contains **only the artifacts explicitly mentioned in the
 Prooflyt Schedules v4 Final** (the binding JVA Schedule 1 + Schedule 2 +
 Annexure A FRD v2.0).
